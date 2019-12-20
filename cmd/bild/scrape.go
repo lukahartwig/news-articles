@@ -61,11 +61,15 @@ func scrape(config Config) ([]store.Article, error) {
 
 		createdAt := time.Now().Unix()
 		url := elem.Request.URL.String()
+		headline := elem.ChildText("h1 .headline")
+		if headline == "" {
+			headline = elem.ChildText("#cover .headline")
+		}
 
 		articles = append(articles, store.Article{
 			ID:          fmt.Sprintf("%s-%d", url, createdAt),
 			URL:         url,
-			Headline:    elem.ChildText("h1 .headline"),
+			Headline:    headline,
 			Description: meta(elem, "description"),
 			Keywords:    keywords(elem),
 			Content:     content,

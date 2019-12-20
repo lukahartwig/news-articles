@@ -56,18 +56,15 @@ func main() {
 
 			s := store.New(config.MongoAddr)
 
-			articles, err := scrape(config)
-			if err != nil {
-				return err
-			}
+			for {
+				articles, err := scrape(config)
+				if err == nil && len(articles) > 0 {
+					logrus.Infof("saving %d articles", len(articles))
+					s.Save(articles)
+				}
 
-			if len(articles) == 0 {
-				logrus.Info("no new articles, skip saving")
-				return nil
+				time.Sleep(15 * time.Minute)
 			}
-
-			logrus.Infof("saving %d articles", len(articles))
-			return s.Save(articles)
 		},
 	}
 
