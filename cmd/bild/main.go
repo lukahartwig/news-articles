@@ -35,7 +35,7 @@ func main() {
 			},
 			&cli.StringFlag{
 				Name:    "mongo-addr",
-				Value:   "mongodb://localhost:21017",
+				Value:   "mongodb://localhost:27017",
 				Usage:   "address of mongo storage",
 				EnvVars: []string{"MONGO_ADDR", "MONGO_URL"},
 			},
