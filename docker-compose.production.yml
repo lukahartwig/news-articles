@@ -1,0 +1,46 @@
+version: "2"
+
+services:
+  redis:
+    image: redis
+    restart: always
+
+  mongo:
+    image: mongo
+    command:
+      - "--bind_ip_all"
+    restart: always
+    ports:
+      - "0.0.0.0:27019:27017"
+
+  bild:
+    image: lukahartwig/bild-scraper
+    restart: always
+    depends_on:
+      - redis
+      - mongo
+    environment:
+      MONGO_URL: mongodb://mongo:27017
+      REDIS_URL: redis:6379
+      BILD_TOPICS: news,politik,unterhaltung,sport,lifestyle,ratgeber,auto,digital,spiele
+
+  russiatoday:
+    image: lukahartwig/russiatoday-scraper
+    restart: always
+    depends_on:
+      - redis
+      - mongo
+    environment:
+      MONGO_URL: mongodb://mongo:27017
+      REDIS_URL: redis:6379
+
+  spiegel:
+    image: lukahartwig/spiegel-scraper
+    restart: always
+    depends_on:
+      - redis
+      - mongo
+    environment:
+      MONGO_URL: mongodb://mongo:27017
+      REDIS_URL: redis:6379
+      SPIEGEL_TOPICS: politik,wirtschaft,panorama,sport,kultur,netzwelt,wissenschaft,gesundheit,karriere,lebenundlernen,reise,auto
