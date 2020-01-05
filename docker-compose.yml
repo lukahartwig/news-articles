@@ -21,7 +21,18 @@ services:
     environment:
       MONGO_URL: mongodb://mongo:27017
       REDIS_URL: redis:6379
-      BILD_TOPICS: news,politik
+      BILD_TOPICS: news,politik,unterhaltung,sport,lifestyle,ratgeber,auto,digital,spiele
+  
+  russiatoday:
+    build:
+      context: .
+      target: russiatoday
+    depends_on:
+      - redis
+      - mongo
+    environment:
+      MONGO_URL: mongodb://mongo:27017
+      REDIS_URL: redis:6379
   
   spiegel:
     build:
@@ -33,4 +44,4 @@ services:
     environment:
       MONGO_URL: mongodb://mongo:27017
       REDIS_URL: redis:6379
-      SPIEGEL_TOPICS: politik,wirtschaft
+      SPIEGEL_TOPICS: politik,wirtschaft,panorama,sport,kultur,netzwelt,wissenschaft,gesundheit,karriere,lebenundlernen,reise,auto

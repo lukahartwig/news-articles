@@ -12,13 +12,16 @@ import (
 )
 
 type Article struct {
-	ID          string   `bson:"_id"`
-	URL         string   `bson:"url"`
-	Headline    string   `bson:"headline"`
-	Description string   `bson:"description"`
-	Keywords    []string `bson:"keywords"`
-	Content     string   `bson:"content"`
-	CreatedAt   int64    `bson:"createdAt"`
+	URL          string   `bson:"_id"`
+	Headline     string   `bson:"headline"`
+	Description  string   `bson:"description"`
+	Keywords     []string `bson:"keywords"`
+	Content      string   `bson:"content"`
+	Topic        string   `bson:"topic"`
+	Publisher    string   `bson:"publisher"`
+	PublishedAt  int64    `bson:"publishedAt"`
+	LastModified int64    `bson:"lastModified"`
+	Paywall      bool     `bson:"paywall"`
 }
 
 type Store interface {
@@ -48,7 +51,7 @@ func (s *store) Save(articles []Article) error {
 	documents := make([]mongo.WriteModel, len(articles))
 	for i, article := range articles {
 		filter := bson.D{
-			{Key: "_id", Value: article.ID},
+			{Key: "_id", Value: article.URL},
 		}
 		documents[i] = mongo.NewReplaceOneModel().SetFilter(filter).SetReplacement(article).SetUpsert(true)
 	}

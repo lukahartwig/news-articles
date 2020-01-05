@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"os"
 	"time"
 
@@ -13,18 +12,18 @@ import (
 	"github.com/lukahartwig/news-articles/store"
 )
 
-type config struct {
+type Config struct {
 	MongoAddr   string
 	RedisAddr   string
 	RedisExpire time.Duration
 	Topics      []string
 }
 
-const feedPattern = "https://www.bild.de/rssfeeds/vw-%s/vw-%s-16728980,dzbildplus=false,sort=1,teaserbildmobil=false,view=rss2.bild.xml"
+const feedPattern = "https://www.spiegel.de/%s/index.rss"
 
 func main() {
 	app := &cli.App{
-		Name: "bild-scraper",
+		Name: "spiegel-scraper",
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:    "redis-addr",
@@ -44,26 +43,19 @@ func main() {
 				Usage:   "address of mongo storage",
 				EnvVars: []string{"MONGO_ADDR", "MONGO_URL"},
 			},
-			&cli.StringSliceFlag{
-				Name:    "topics",
-				Value:   cli.NewStringSlice("politik", "news"),
-				Usage:   "topics from BILD that will be included",
-				EnvVars: []string{"BILD_TOPICS"},
-			},
 		},
 		Action: func(c *cli.Context) error {
-			config := config{
+			config := Config{
 				MongoAddr:   c.String("mongo-addr"),
 				RedisAddr:   c.String("redis-addr"),
 				RedisExpire: c.Duration("redis-expire"),
-				Topics:      c.StringSlice("topics"),
 			}
 
 			storage := store.New(config.MongoAddr)
 
 			queueStorage := &redisstorage.Storage{
 				Address: config.RedisAddr,
-				Prefix:  "bild",
+				Prefix:  "rt",
 				Expires: config.RedisExpire,
 			}
 			defer func() {
@@ -72,16 +64,11 @@ func main() {
 
 			scraper := scraper.Scraper{
 				Storage:   queueStorage,
-				Extractor: scraper.BildExtractor{},
-			}
-
-			urls := make([]string, len(config.Topics))
-			for i, topic := range config.Topics {
-				urls[i] = fmt.Sprintf(feedPattern, topic, topic)
+				Extractor: scraper.RTExtractor{},
 			}
 
 			for {
-				articles := scraper.Scrape(urls...)
+				articles := scraper.Scrape("https://deutsch.rt.com/feeds/news")
 				if len(articles) > 0 {
 					logrus.Infof("saving %d articles", len(articles))
 					storage.Save(articles)

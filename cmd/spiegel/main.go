@@ -1,12 +1,15 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"time"
 
+	"github.com/gocolly/redisstorage"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
 
+	"github.com/lukahartwig/news-articles/scraper"
 	"github.com/lukahartwig/news-articles/store"
 )
 
@@ -17,9 +20,11 @@ type Config struct {
 	Topics      []string
 }
 
+const feedPattern = "https://www.spiegel.de/%s/index.rss"
+
 func main() {
 	app := &cli.App{
-		Name: "spiegel-headlines",
+		Name: "spiegel-scraper",
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:    "redis-addr",
@@ -54,15 +59,33 @@ func main() {
 				Topics:      c.StringSlice("topics"),
 			}
 
-			s := store.New(config.MongoAddr)
+			storage := store.New(config.MongoAddr)
+
+			queueStorage := &redisstorage.Storage{
+				Address: config.RedisAddr,
+				Prefix:  "spiegel",
+				Expires: config.RedisExpire,
+			}
+			defer func() {
+				queueStorage.Client.Close()
+			}()
+
+			scraper := scraper.Scraper{
+				Storage:   queueStorage,
+				Extractor: scraper.SpiegelExtractor{},
+			}
+
+			urls := make([]string, len(config.Topics))
+			for i, topic := range config.Topics {
+				urls[i] = fmt.Sprintf(feedPattern, topic)
+			}
 
 			for {
-				articles, err := scrape(config)
-				if err == nil && len(articles) > 0 {
+				articles := scraper.Scrape(urls...)
+				if len(articles) > 0 {
 					logrus.Infof("saving %d articles", len(articles))
-					s.Save(articles)
+					storage.Save(articles)
 				}
-
 				time.Sleep(15 * time.Minute)
 			}
 		},
