@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"os"
 	"time"
 
@@ -19,8 +18,6 @@ type config struct {
 	RedisExpire time.Duration
 	Topics      []string
 }
-
-const feedPattern = "https://www.bild.de/rssfeeds/vw-%s/vw-%s-16728980,dzbildplus=false,sort=1,teaserbildmobil=false,view=rss2.bild.xml"
 
 func main() {
 	app := &cli.App{
@@ -44,19 +41,12 @@ func main() {
 				Usage:   "address of mongo storage",
 				EnvVars: []string{"MONGO_ADDR", "MONGO_URL"},
 			},
-			&cli.StringSliceFlag{
-				Name:    "topics",
-				Value:   cli.NewStringSlice("politik", "news"),
-				Usage:   "topics from BILD that will be included",
-				EnvVars: []string{"BILD_TOPICS"},
-			},
 		},
 		Action: func(c *cli.Context) error {
 			config := config{
 				MongoAddr:   c.String("mongo-addr"),
 				RedisAddr:   c.String("redis-addr"),
 				RedisExpire: c.Duration("redis-expire"),
-				Topics:      c.StringSlice("topics"),
 			}
 
 			storage := store.New(config.MongoAddr)
@@ -75,13 +65,8 @@ func main() {
 				Extractor: scraper.BildExtractor{},
 			}
 
-			urls := make([]string, len(config.Topics))
-			for i, topic := range config.Topics {
-				urls[i] = fmt.Sprintf(feedPattern, topic, topic)
-			}
-
 			for {
-				articles := scraper.Scrape(urls...)
+				articles := scraper.Scrape("https://www.bild.de/rssfeeds/vw-alles/vw-alles-26970192,dzbildplus=false,sort=1,teaserbildmobil=false,view=rss2,wtmc=ob.feed.bild.xml")
 				if len(articles) > 0 {
 					logrus.Infof("saving %d articles", len(articles))
 					storage.Save(articles)
